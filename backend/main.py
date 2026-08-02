@@ -4,6 +4,7 @@ from sqlalchemy import text
 from typing import List
 import shutil
 import os
+from text_extraction import extract_text_from_pdf
 
 import models
 import schemas
@@ -49,3 +50,12 @@ def upload_document(file: UploadFile = File(...), db: Session = Depends(get_db))
     db.refresh(nouveau_document)
 
     return nouveau_document
+
+@app.get("/api/documents/{document_id}/extract-text")
+def extract_text(document_id: int, db: Session = Depends(get_db)):
+    document = db.query(models.Document).filter(models.Document.id == document_id).first()
+    if not document:
+        return {"error": "Document non trouvé"}
+    
+    texte = extract_text_from_pdf(document.chemin_fichier)
+    return {"document_id": document_id, "texte_extrait": texte[:500]}
