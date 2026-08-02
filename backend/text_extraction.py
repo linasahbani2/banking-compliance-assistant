@@ -16,3 +16,11 @@ def split_text_into_chunks(texte: str) -> list[str]:
     )
     chunks = splitter.split_text(texte)
     return chunks
+
+from sentence_transformers import SentenceTransformer
+
+modele_embedding = SentenceTransformer("all-MiniLM-L6-v2")
+
+def generate_embedding(texte: str) -> list[float]:
+    vecteur = modele_embedding.encode(texte)
+    return vecteur.tolist()

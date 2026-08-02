@@ -4,7 +4,7 @@ from sqlalchemy import text
 from typing import List
 import shutil
 import os
-from text_extraction import extract_text_from_pdf, split_text_into_chunks
+from text_extraction import extract_text_from_pdf, split_text_into_chunks, generate_embedding
 
 import models
 import schemas
@@ -73,4 +73,14 @@ def get_document_chunks(document_id: int, db: Session = Depends(get_db)):
         "document_id": document_id,
         "nombre_de_chunks": len(chunks),
         "premiers_chunks": chunks[:3]
+    }
+
+@app.get("/api/test-embedding")
+def test_embedding():
+    texte_exemple = "Le contrôle KYC est obligatoire avant validation."
+    vecteur = generate_embedding(texte_exemple)
+    return {
+        "texte": texte_exemple,
+        "taille_du_vecteur": len(vecteur),
+        "premiers_nombres": vecteur[:5]
     }
