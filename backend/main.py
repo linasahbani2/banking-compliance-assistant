@@ -84,3 +84,49 @@ def test_embedding():
         "taille_du_vecteur": len(vecteur),
         "premiers_nombres": vecteur[:5]
     }
+
+@app.post("/api/documents/{document_id}/index")
+def index_document(document_id: int, db: Session = Depends(get_db)):
+    document = db.query(models.Document).filter(models.Document.id == document_id).first()
+    if not document:
+        return {"error": "Document non trouvé"}
+
+    texte = extract_text_from_pdf(document.chemin_fichier)
+    chunks = split_text_into_chunks(texte)
+
+    chunks_crees = 0
+    for chunk_texte in chunks:
+        embedding = generate_embedding(chunk_texte)
+        nouveau_chunk = models.DocumentChunk(
+            document_id=document_id,
+            texte=chunk_texte,
+            embedding=embedding
+        )
+        db.add(nouveau_chunk)
+        chunks_crees += 1
+
+    db.commit()
+
+    return {
+        "document_id": document_id,
+        "chunks_indexes": chunks_crees
+    }
+
+@app.get("/api/search")
+def search_chunks(question: str, db: Session = Depends(get_db)):
+    embedding_question = generate_embedding(question)
+
+    resultats = (
+        db.query(models.DocumentChunk)
+        .order_by(models.DocumentChunk.embedding.cosine_distance(embedding_question))
+        .limit(3)
+        .all()
+    )
+
+    return {
+        "question": question,
+        "resultats": [
+            {"document_id": r.document_id, "texte": r.texte}
+            for r in resultats
+        ]
+    }
