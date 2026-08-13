@@ -4,8 +4,7 @@ from sqlalchemy import text
 from typing import List
 import shutil
 import os
-from text_extraction import extract_text_from_pdf, split_text_into_chunks, generate_embedding
-
+from text_extraction import extract_text_from_pdf, split_text_into_chunks, generate_embedding, generate_answer
 import models
 import schemas
 from database import get_db, engine
@@ -129,4 +128,24 @@ def search_chunks(question: str, db: Session = Depends(get_db)):
             {"document_id": r.document_id, "texte": r.texte}
             for r in resultats
         ]
+    }
+
+@app.get("/api/ask")
+def ask_question(question: str, db: Session = Depends(get_db)):
+    embedding_question = generate_embedding(question)
+
+    resultats = (
+        db.query(models.DocumentChunk)
+        .order_by(models.DocumentChunk.embedding.cosine_distance(embedding_question))
+        .limit(3)
+        .all()
+    )
+
+    contexte = "\n\n".join([r.texte for r in resultats])
+    reponse = generate_answer(question, contexte)
+
+    return {
+        "question": question,
+        "reponse": reponse,
+        "sources": [{"document_id": r.document_id, "extrait": r.texte[:100]} for r in resultats]
     }
