@@ -8,8 +8,16 @@ from text_extraction import extract_text_from_pdf, split_text_into_chunks, gener
 import models
 import schemas
 from database import get_db, engine
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Banking Compliance & Audit Assistant API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def read_root():
