@@ -9,6 +9,8 @@ import models
 import schemas
 from database import get_db, engine
 from fastapi.middleware.cors import CORSMiddleware
+from compliance_rules import REGLES_CONFORMITE
+
 
 app = FastAPI(title="Banking Compliance & Audit Assistant API")
 app.add_middleware(
@@ -156,4 +158,66 @@ def ask_question(question: str, db: Session = Depends(get_db)):
         "question": question,
         "reponse": reponse,
         "sources": [{"document_id": r.document_id, "extrait": r.texte[:100]} for r in resultats]
+    }
+
+
+@app.post("/api/dossiers", response_model=schemas.DossierOut)
+def create_dossier(dossier: schemas.DossierCreate, db: Session = Depends(get_db)):
+    nouveau_dossier = models.Dossier(
+        nom=dossier.nom,
+        type_dossier=dossier.type_dossier
+    )
+    db.add(nouveau_dossier)
+    db.commit()
+    db.refresh(nouveau_dossier)
+    return nouveau_dossier
+
+
+@app.get("/api/dossiers", response_model=List[schemas.DossierOut])
+def list_dossiers(db: Session = Depends(get_db)):
+    return db.query(models.Dossier).all()
+
+
+@app.post("/api/dossiers/{dossier_id}/documents")
+def add_document_to_dossier(
+    dossier_id: int,
+    document: schemas.DossierDocumentCreate,
+    db: Session = Depends(get_db)
+):
+    lien = models.DossierDocument(
+        dossier_id=dossier_id,
+        document_id=document.document_id,
+        type_document=document.type_document
+    )
+    db.add(lien)
+    db.commit()
+    return {"message": "Document rattaché au dossier"}
+
+
+@app.get("/api/dossiers/{dossier_id}/analyse")
+def analyser_dossier(dossier_id: int, db: Session = Depends(get_db)):
+    dossier = db.query(models.Dossier).filter(models.Dossier.id == dossier_id).first()
+    if not dossier:
+        return {"error": "Dossier non trouvé"}
+
+    documents_requis = REGLES_CONFORMITE.get(dossier.type_dossier, [])
+
+    documents_fournis = (
+        db.query(models.DossierDocument)
+        .filter(models.DossierDocument.dossier_id == dossier_id)
+        .all()
+    )
+    types_fournis = [doc.type_document for doc in documents_fournis]
+
+    documents_manquants = [t for t in documents_requis if t not in types_fournis]
+    documents_presents = [t for t in documents_requis if t in types_fournis]
+
+    conforme = len(documents_manquants) == 0
+
+    return {
+        "dossier_id": dossier_id,
+        "type_dossier": dossier.type_dossier,
+        "conforme": conforme,
+        "documents_presents": documents_presents,
+        "documents_manquants": documents_manquants
     }
