@@ -259,3 +259,41 @@ Réponds en français, de manière professionnelle et concise."""
         "nom": dossier.nom,
         "rapport": rapport
     }
+
+
+@app.get("/api/dashboard/stats")
+def get_dashboard_stats(db: Session = Depends(get_db)):
+    total_documents = db.query(models.Document).count()
+    total_dossiers = db.query(models.Dossier).count()
+
+    dossiers = db.query(models.Dossier).all()
+
+    dossiers_conformes = 0
+    dossiers_non_conformes = 0
+
+    for dossier in dossiers:
+        documents_requis = REGLES_CONFORMITE.get(dossier.type_dossier, [])
+        documents_fournis = (
+            db.query(models.DossierDocument)
+            .filter(models.DossierDocument.dossier_id == dossier.id)
+            .all()
+        )
+        types_fournis = [doc.type_document for doc in documents_fournis]
+        manquants = [t for t in documents_requis if t not in types_fournis]
+
+        if len(manquants) == 0:
+            dossiers_conformes += 1
+        else:
+            dossiers_non_conformes += 1
+
+    repartition_types = {}
+    for dossier in dossiers:
+        repartition_types[dossier.type_dossier] = repartition_types.get(dossier.type_dossier, 0) + 1
+
+    return {
+        "total_documents": total_documents,
+        "total_dossiers": total_dossiers,
+        "dossiers_conformes": dossiers_conformes,
+        "dossiers_non_conformes": dossiers_non_conformes,
+        "repartition_types": repartition_types
+    }

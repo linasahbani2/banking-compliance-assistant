@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import DocumentsPage from "./pages/DocumentsPage";
 import ChatPage from "./pages/ChatPage";
 import DossiersPage from "./pages/DossiersPage";
+import DashboardPage from "./pages/DashboardPage";
+
 
 function App() {
   return (
@@ -14,7 +16,10 @@ function App() {
               <Link to="/" className="hover:underline">Documents</Link>
               
               <Link to="/chat" className="hover:underline">Assistant IA</Link>
+              
               <Link to="/dossiers" className="hover:underline">Dossiers</Link>            
+              <Link to="/dashboard" className="hover:underline">Dashboard</Link>
+            
             </nav>
           </div>
         </header>
@@ -23,6 +28,7 @@ function App() {
           <Route path="/" element={<DocumentsPage />} />
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/dossiers" element={<DossiersPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
         </Routes>
       </div>
     </BrowserRouter>
