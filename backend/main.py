@@ -221,3 +221,41 @@ def analyser_dossier(dossier_id: int, db: Session = Depends(get_db)):
         "documents_presents": documents_presents,
         "documents_manquants": documents_manquants
     }
+
+
+@app.get("/api/dossiers/{dossier_id}/rapport")
+def generer_rapport(dossier_id: int, db: Session = Depends(get_db)):
+    dossier = db.query(models.Dossier).filter(models.Dossier.id == dossier_id).first()
+    if not dossier:
+        return {"error": "Dossier non trouvé"}
+
+    documents_requis = REGLES_CONFORMITE.get(dossier.type_dossier, [])
+    documents_fournis = (
+        db.query(models.DossierDocument)
+        .filter(models.DossierDocument.dossier_id == dossier_id)
+        .all()
+    )
+    types_fournis = [doc.type_document for doc in documents_fournis]
+    documents_manquants = [t for t in documents_requis if t not in types_fournis]
+
+    prompt = f"""Tu es un assistant d'audit bancaire. Rédige un rapport court et structuré pour le dossier suivant.
+
+Nom du dossier : {dossier.nom}
+Type de dossier : {dossier.type_dossier}
+Documents fournis : {", ".join(types_fournis) if types_fournis else "aucun"}
+Documents manquants : {", ".join(documents_manquants) if documents_manquants else "aucun"}
+
+Rédige le rapport avec 3 parties claires :
+1. Résumé
+2. Anomalies détectées (documents manquants, s'il y en a)
+3. Recommandations
+
+Réponds en français, de manière professionnelle et concise."""
+
+    rapport = generate_answer(dossier.nom, prompt)
+
+    return {
+        "dossier_id": dossier_id,
+        "nom": dossier.nom,
+        "rapport": rapport
+    }

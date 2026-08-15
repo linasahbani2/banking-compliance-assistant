@@ -23,6 +23,7 @@ function DossiersPage() {
   const [typeDossier, setTypeDossier] = useState(TYPES_DOSSIER[0]);
   const [selectedDossier, setSelectedDossier] = useState<number | null>(null);
   const [analyse, setAnalyse] = useState<Analyse | null>(null);
+  const [rapport, setRapport] = useState<string | null>(null);
 
   const fetchDossiers = async () => {
     const response = await fetch(`${API_URL}/api/dossiers`);
@@ -49,9 +50,19 @@ function DossiersPage() {
 
   const handleAnalyser = async (dossierId: number) => {
     setSelectedDossier(dossierId);
+    setRapport(null);
     const response = await fetch(`${API_URL}/api/dossiers/${dossierId}/analyse`);
     const data = await response.json();
     setAnalyse(data);
+  };
+
+  const handleGenererRapport = async (dossierId: number) => {
+    setSelectedDossier(dossierId);
+    setAnalyse(null);
+    setRapport("Génération en cours...");
+    const response = await fetch(`${API_URL}/api/dossiers/${dossierId}/rapport`);
+    const data = await response.json();
+    setRapport(data.rapport);
   };
 
   return (
@@ -99,12 +110,20 @@ function DossiersPage() {
                     <p className="font-medium">{d.nom}</p>
                     <p className="text-sm text-gray-400">{d.type_dossier}</p>
                   </div>
-                  <button
-                    onClick={() => handleAnalyser(d.id)}
-                    className="text-blue-700 text-sm hover:underline"
-                  >
-                    Analyser
-                  </button>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => handleAnalyser(d.id)}
+                      className="text-blue-700 text-sm hover:underline"
+                    >
+                      Analyser
+                    </button>
+                    <button
+                      onClick={() => handleGenererRapport(d.id)}
+                      className="text-purple-700 text-sm hover:underline"
+                    >
+                      Générer rapport
+                    </button>
+                  </div>
                 </div>
 
                 {selectedDossier === d.id && analyse && (
@@ -117,6 +136,12 @@ function DossiersPage() {
                         Documents manquants : {analyse.documents_manquants.join(", ")}
                       </p>
                     )}
+                  </div>
+                )}
+
+                {selectedDossier === d.id && rapport && (
+                  <div className="mt-3 p-3 bg-purple-50 rounded whitespace-pre-line text-sm">
+                    {rapport}
                   </div>
                 )}
               </li>
