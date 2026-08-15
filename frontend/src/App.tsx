@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import DocumentsPage from "./pages/DocumentsPage";
 import ChatPage from "./pages/ChatPage";
+import DossiersPage from "./pages/DossiersPage";
 
 function App() {
   return (
@@ -11,7 +12,9 @@ function App() {
             <h1 className="text-xl font-bold">Banking Compliance & Audit Assistant</h1>
             <nav className="flex gap-4">
               <Link to="/" className="hover:underline">Documents</Link>
+              
               <Link to="/chat" className="hover:underline">Assistant IA</Link>
+              <Link to="/dossiers" className="hover:underline">Dossiers</Link>            
             </nav>
           </div>
         </header>
@@ -19,6 +22,7 @@ function App() {
         <Routes>
           <Route path="/" element={<DocumentsPage />} />
           <Route path="/chat" element={<ChatPage />} />
+          <Route path="/dossiers" element={<DossiersPage />} />
         </Routes>
       </div>
     </BrowserRouter>
