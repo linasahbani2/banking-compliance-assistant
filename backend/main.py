@@ -10,9 +10,11 @@ import schemas
 from database import get_db, engine
 from fastapi.middleware.cors import CORSMiddleware
 from compliance_rules import REGLES_CONFORMITE
+from database import Base, engine
 
 
 app = FastAPI(title="Banking Compliance & Audit Assistant API")
+Base.metadata.create_all(bind=engine)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
